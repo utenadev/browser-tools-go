@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"browser-tools-go/internal/browser"
-
 	"github.com/spf13/cobra"
 )
 
@@ -18,19 +17,30 @@ const (
 	ExitError   = 1
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "browser-tools-go",
-	Short: "A Go implementation of browser-tools",
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Configure logging to stderr
-		log.SetOutput(os.Stderr)
-	},
+// NewRootCmd creates a new root command for the application.
+func NewRootCmd() *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:   "browser-tools-go",
+		Short: "A Go implementation of browser-tools",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			// Configure logging to stderr
+			log.SetOutput(os.Stderr)
+		},
+	}
+
+	// Add browser lifecycle commands
+	rootCmd.AddCommand(newStartCmd(), newCloseCmd(), newRunCmd())
+
+	// Add action commands
+	rootCmd.AddCommand(newNavigateCmd(), newScreenshotCmd(), newPickCmd(), newEvalCmd(), newCookiesCmd(), newSearchCmd(), newContentCmd(), newHnScraperCmd())
+
+	return rootCmd
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+
+// Execute creates the root command and executes it.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := NewRootCmd().Execute(); err != nil {
 		os.Exit(ExitError)
 	}
 }
@@ -42,38 +52,70 @@ type browserCtx struct {
 	err    error
 }
 
-// persistentPreRun creates a persistent browser context for commands that need it.
+// browserCtxKey is the key for storing the browserCtx in a context.Context.
+type browserCtxKeyType string
+
+const browserCtxKey browserCtxKeyType = "browserCtx"
+
+// persistentPreRun ensures a browser context is available.
 func persistentPreRun(cmd *cobra.Command, args []string) {
-	ctx, cancel, err := browser.NewPersistentContext()
-	if err != nil {
-		log.Printf("Error creating persistent context: %v", err)
-		// Store the error in the command's annotations to be handled by the Run function.
-		cmd.Annotations = map[string]string{"error": err.Error()}
+	if cmd.Context().Value(browserCtxKey) != nil {
 		return
 	}
 
-	cmd.SetContext(context.WithValue(cmd.Context(), "browserCtx", &browserCtx{ctx: ctx, cancel: cancel}))
+	ctx, cancel, err := browser.NewPersistentContext()
+	if err != nil {
+		if cmd.Annotations == nil {
+			cmd.Annotations = make(map[string]string)
+		}
+		cmd.Annotations["error"] = fmt.Sprintf("Failed to connect to browser: %v. Is it running?", err)
+		return
+	}
+
+	browserCtxVal := &browserCtx{ctx: ctx, cancel: cancel}
+	ctxWithBrowser := context.WithValue(cmd.Context(), browserCtxKey, browserCtxVal)
+	cmd.SetContext(ctxWithBrowser)
 }
 
 // persistentPostRun cancels the browser context.
 func persistentPostRun(cmd *cobra.Command, args []string) {
-	if browserCtxVal := cmd.Context().Value("browserCtx"); browserCtxVal != nil {
-		if bc, ok := browserCtxVal.(*browserCtx); ok && bc.cancel != nil {
+	if cmd.Context().Value(browserCtxKey) != nil {
+		val := cmd.Context().Value(browserCtxKey)
+		if bc, ok := val.(*browserCtx); ok && bc.cancel != nil {
+			// Don't cancel if the parent is the 'run' command, as it manages the lifecycle.
+			if cmd.Parent() != nil && cmd.Parent().Use == "run <subcommand> [args...]" {
+				return
+			}
 			bc.cancel()
 		}
 	}
 }
 
+
 // handleCmdErr checks for an error from the pre-run steps and handles it.
 func handleCmdErr(cmd *cobra.Command) bool {
 	if cmd.Annotations != nil {
 		if errMsg, ok := cmd.Annotations["error"]; ok {
-			log.Printf("Error: %s", errMsg)
+			log.Println(errMsg)
 			return true
 		}
 	}
 	return false
 }
+
+// getBrowserCtx retrieves the browser context safely.
+func getBrowserCtx(cmd *cobra.Command) (*browserCtx, error) {
+	val := cmd.Context().Value(browserCtxKey)
+	if val == nil {
+		return nil, fmt.Errorf("browser context not available")
+	}
+	bc, ok := val.(*browserCtx)
+	if !ok {
+		return nil, fmt.Errorf("invalid browser context type")
+	}
+	return bc, nil
+}
+
 
 // prettyPrintResults marshals the data to JSON and prints it to stdout.
 func prettyPrintResults(data interface{}) {
@@ -82,12 +124,4 @@ func prettyPrintResults(data interface{}) {
 		log.Fatalf("Failed to marshal result: %v", err)
 	}
 	fmt.Println(string(output))
-}
-
-func init() {
-	// Add browser lifecycle commands
-	rootCmd.AddCommand(newStartCmd(), newCloseCmd(), newRunCmd())
-
-	// Add action commands
-	rootCmd.AddCommand(newNavigateCmd(), newScreenshotCmd(), newPickCmd(), newEvalCmd(), newCookiesCmd(), newSearchCmd(), newContentCmd(), newHnScraperCmd())
 }

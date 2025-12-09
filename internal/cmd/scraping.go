@@ -23,11 +23,15 @@ func newSearchCmd() *cobra.Command {
 			if handleCmdErr(cmd) {
 				return
 			}
-			browserCtx := cmd.Context().Value("browserCtx").(*browserCtx)
+			bc, err := getBrowserCtx(cmd)
+			if err != nil {
+				log.Fatalf("✗ %v", err)
+			}
+
 			query := strings.Join(args, " ")
 			log.Printf("🔍 Searching Google for: %s (results: %d, content: %t)", query, n, content)
 
-			results, err := logic.Search(browserCtx.ctx, query, n, content)
+			results, err := logic.Search(bc.ctx, query, n, content)
 			if err != nil {
 				log.Fatalf("✗ Failed to perform search: %v", err)
 			}
@@ -53,14 +57,18 @@ func newContentCmd() *cobra.Command {
 			if handleCmdErr(cmd) {
 				return
 			}
-			browserCtx := cmd.Context().Value("browserCtx").(*browserCtx)
+			bc, err := getBrowserCtx(cmd)
+			if err != nil {
+				log.Fatalf("✗ %v", err)
+			}
+
 			var url string
 			if len(args) > 0 {
 				url = args[0]
 			}
 			log.Printf("📄 Extracting content (format: %s)", format)
 
-			result, err := logic.GetContent(browserCtx.ctx, url, format)
+			result, err := logic.GetContent(bc.ctx, url, format)
 			if err != nil {
 				log.Fatalf("✗ Failed to extract content: %v", err)
 			}
@@ -85,10 +93,14 @@ func newHnScraperCmd() *cobra.Command {
 			if handleCmdErr(cmd) {
 				return
 			}
-			browserCtx := cmd.Context().Value("browserCtx").(*browserCtx)
+			bc, err := getBrowserCtx(cmd)
+			if err != nil {
+				log.Fatalf("✗ %v", err)
+			}
+
 			log.Printf("📰 Scraping Hacker News (limit: %d)...", limit)
 
-			submissions, err := logic.HnScraper(browserCtx.ctx, limit)
+			submissions, err := logic.HnScraper(bc.ctx, limit)
 			if err != nil {
 				log.Fatalf("✗ Failed to scrape Hacker News: %v", err)
 			}

@@ -19,9 +19,13 @@ func newNavigateCmd() *cobra.Command {
 			if handleCmdErr(cmd) {
 				return
 			}
-			browserCtx := cmd.Context().Value("browserCtx").(*browserCtx)
+			bc, err := getBrowserCtx(cmd)
+			if err != nil {
+				log.Fatalf("✗ %v", err)
+			}
+
 			log.Printf("🚀 Navigating to %s...", args[0])
-			if err := logic.Navigate(browserCtx.ctx, args[0]); err != nil {
+			if err := logic.Navigate(bc.ctx, args[0]); err != nil {
 				log.Fatalf("✗ Failed to navigate: %v", err)
 			}
 			log.Println("✅ Navigation successful.")
@@ -44,7 +48,10 @@ func newScreenshotCmd() *cobra.Command {
 			if handleCmdErr(cmd) {
 				return
 			}
-			browserCtx := cmd.Context().Value("browserCtx").(*browserCtx)
+			bc, err := getBrowserCtx(cmd)
+			if err != nil {
+				log.Fatalf("✗ %v", err)
+			}
 
 			filePath := ""
 			if len(args) > 0 {
@@ -56,7 +63,7 @@ func newScreenshotCmd() *cobra.Command {
 			}
 			log.Println("📸 Taking screenshot...")
 
-			savedPath, err := logic.Screenshot(browserCtx.ctx, url, filePath, fullPage)
+			savedPath, err := logic.Screenshot(bc.ctx, url, filePath, fullPage)
 			if err != nil {
 				log.Fatalf("✗ Failed to take screenshot: %v", err)
 			}
