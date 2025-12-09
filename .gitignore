@@ -1,0 +1,19 @@
+# Go build artifacts
+browser-tools-go.exe
+browser-tools-go
+
+# Copied TypeScript project
+browser-tools/
+
+# User data and session info
+.browser-tools-go/
+.browser-tools-profile/
+
+# Logs
+*.log
+
+# User specific (from user's file)
+my/
+
+# OS specific
+.DS_Store
