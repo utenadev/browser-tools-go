@@ -27,3 +27,4 @@
 - テストカバレッジを拡充しました: `internal/logic/navigation_test.go`と`internal/config/config_test.go`を追加。
 - cmd層およびbrowser層の`log.Fatalf`をすべて除去し、`RunE`パターンによるエラー返却に統一しました。
 - ハードコードされたCSSセレクタを設定可能にしました: `internal/config/selectors.go`を追加し、`scraping.go`を更新。
+- CLIコマンドのE2Eテストを追加しました: `internal/cmd/cmd_test.go`（ヘルプ表示テスト）。
