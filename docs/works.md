@@ -18,4 +18,5 @@
 - Encapsulated the global `rootCmd` into a `newRootCmd()` factory function to improve testability.
 - Updated the `persistentPreRun` logic to be aware of the `run` command's context, allowing commands to work seamlessly in both persistent and temporary browser modes.
 - Manually validated the behavior of both direct command execution and execution via the `run` command.
+- Updated the code review document to reflect that all major issues have been resolved.
 - Submitted the final changes for the remaining refactoring tasks.
