@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"browser-tools-go/internal/config"
 	"browser-tools-go/internal/models"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
@@ -19,40 +20,36 @@ import (
 
 // Search performs a Google search and returns the results.
 func Search(ctx context.Context, query string, numResults int, fetchContent bool) ([]models.SearchResult, error) {
+	sel := config.GetSelectors().Google
 	searchURL := fmt.Sprintf("https://www.google.com/search?q=%s", url.QueryEscape(query))
 
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(searchURL),
-		chromedp.WaitVisible("div#search"),
+		chromedp.WaitVisible(sel.ResultContainer),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to navigate to google and wait for results: %w", err)
 	}
 
-	var searchResultsJSON string
-	script := `
-		(() => {
-			const results = [];
-			const items = document.querySelectorAll('div#search div.g');
-			for (let i = 0; i < items.length; i++) {
-				const item = items[i];
-				const titleEl = item.querySelector('h3');
-				const linkEl = item.querySelector('a');
-				const snippetEl = item.querySelector('div.VwiC3b');
-				if (titleEl && linkEl && snippetEl) {
-					results.push({
-						title: titleEl.innerText,
-						link: linkEl.href,
-						snippet: snippetEl.innerText
-					});
-				}
-			}
-			return JSON.stringify(results);
-		})();
-	`
-	err = chromedp.Run(ctx, chromedp.Evaluate(script, &searchResultsJSON))
+	var titles, links, snippets []string
+	titleJS := fmt.Sprintf(`Array.from(document.querySelectorAll('%s')).map(el => el.innerText)`, sel.Title)
+	linkJS := fmt.Sprintf(`Array.from(document.querySelectorAll('%s')).filter(a => a.href.startsWith('http') && !a.href.includes('google.com')).map(a => a.href)`, sel.Link)
+	snippetJS := fmt.Sprintf(`Array.from(document.querySelectorAll('%s')).map(el => el.innerText)`, sel.Snippet)
+
+	err = chromedp.Run(ctx,
+		chromedp.Evaluate(titleJS, &titles),
+		chromedp.Evaluate(linkJS, &links),
+		chromedp.Evaluate(snippetJS, &snippets),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to extract search results with script: %w", err)
+		// Fallback selectors
+		fallbackTitleJS := fmt.Sprintf(`Array.from(document.querySelectorAll('%s')).map(el => el.innerText)`, sel.TitleFallback)
+		err = chromedp.Run(ctx,
+			chromedp.Evaluate(fallbackTitleJS, &titles),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract search result titles: %w", err)
+		}
 	}
 
 	var rawResults []map[string]string
@@ -154,23 +151,32 @@ func GetContent(ctx context.Context, targetURL, format string) (map[string]inter
 
 // HnScraper scrapes top stories from Hacker News.
 func HnScraper(ctx context.Context, limit int) ([]models.HnSubmission, error) {
+	sel := config.GetSelectors().HN
 	hnURL := "https://news.ycombinator.com"
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(hnURL),
-		chromedp.WaitVisible("table.itemlist"),
+		chromedp.WaitVisible(sel.Container),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to navigate to hacker news: %w", err)
 	}
 
 	var titles, urls, scoreTexts, authorTexts, timeTexts, commentTexts []string
+
+	titleJS := fmt.Sprintf(`Array.from(document.querySelectorAll('%s')).map(a => a.textContent)`, sel.Title)
+	urlJS := fmt.Sprintf(`Array.from(document.querySelectorAll('%s')).map(a => a.href)`, sel.URL)
+	scoreJS := fmt.Sprintf(`Array.from(document.querySelectorAll('%s')).map(el => el.textContent)`, sel.Score)
+	authorJS := fmt.Sprintf(`Array.from(document.querySelectorAll('%s')).map(el => el.textContent)`, sel.Author)
+	timeJS := fmt.Sprintf(`Array.from(document.querySelectorAll('%s')).map(el => el.title || el.textContent)`, sel.Time)
+	commentsJS := fmt.Sprintf(`Array.from(document.querySelectorAll('%s')).filter(a => a.textContent.includes('comment')).map(a => a.textContent)`, sel.Comments)
+
 	err = chromedp.Run(ctx,
-		chromedp.Evaluate(`Array.from(document.querySelectorAll('span.titleline > a')).map(a => a.textContent)`, &titles),
-		chromedp.Evaluate(`Array.from(document.querySelectorAll('span.titleline > a')).map(a => a.href)`, &urls),
-		chromedp.Evaluate(`Array.from(document.querySelectorAll('.score')).map(el => el.textContent)`, &scoreTexts),
-		chromedp.Evaluate(`Array.from(document.querySelectorAll('.hnuser')).map(el => el.textContent)`, &authorTexts),
-		chromedp.Evaluate(`Array.from(document.querySelectorAll('span.age a')).map(el => el.title || el.textContent)`, &timeTexts),
-		chromedp.Evaluate(`Array.from(document.querySelectorAll('td.subtext > a')).filter(a => a.textContent.includes('comment')).map(a => a.textContent)`, &commentTexts),
+		chromedp.Evaluate(titleJS, &titles),
+		chromedp.Evaluate(urlJS, &urls),
+		chromedp.Evaluate(scoreJS, &scoreTexts),
+		chromedp.Evaluate(authorJS, &authorTexts),
+		chromedp.Evaluate(timeJS, &timeTexts),
+		chromedp.Evaluate(commentsJS, &commentTexts),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract data from hacker news: %w", err)

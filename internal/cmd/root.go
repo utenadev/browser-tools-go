@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"browser-tools-go/internal/browser"
+
 	"github.com/spf13/cobra"
 )
 
@@ -33,6 +34,7 @@ func NewRootCmd() *cobra.Command {
 	return rootCmd
 }
 
+// Execute creates the root command and executes it.
 func Execute() {
 	if err := NewRootCmd().Execute(); err != nil {
 		os.Exit(ExitError)
@@ -64,6 +66,32 @@ func persistentPreRunE(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// persistentPostRun cancels the browser context.
+func persistentPostRun(cmd *cobra.Command, args []string) {
+	if cmd.Context().Value(browserCtxKey) != nil {
+		val := cmd.Context().Value(browserCtxKey)
+		if bc, ok := val.(*browserCtx); ok && bc.cancel != nil {
+			// Don't cancel if the parent is the 'run' command, as it manages the lifecycle.
+			if cmd.Parent() != nil && cmd.Parent().Use == "run <subcommand> [args...]" {
+				return
+			}
+			bc.cancel()
+		}
+	}
+}
+
+// handleCmdErr checks for an error from the pre-run steps and handles it.
+func handleCmdErr(cmd *cobra.Command) bool {
+	if cmd.Annotations != nil {
+		if errMsg, ok := cmd.Annotations["error"]; ok {
+			log.Println(errMsg)
+			return true
+		}
+	}
+	return false
+}
+
+// getBrowserCtx retrieves the browser context safely.
 func getBrowserCtx(cmd *cobra.Command) (*browserCtx, error) {
 	val := cmd.Context().Value(browserCtxKey)
 	if val == nil {
@@ -76,10 +104,12 @@ func getBrowserCtx(cmd *cobra.Command) (*browserCtx, error) {
 	return bc, nil
 }
 
+// prettyPrintResults marshals the data to JSON and prints it to stdout.
 func prettyPrintResults(data interface{}) {
 	output, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
-		log.Fatalf("Failed to marshal result: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to marshal result: %v\n", err)
+		return
 	}
 	fmt.Println(string(output))
 }
