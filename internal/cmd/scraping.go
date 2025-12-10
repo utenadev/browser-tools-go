@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -19,13 +20,13 @@ func newSearchCmd() *cobra.Command {
 		Args:              cobra.MinimumNArgs(1),
 		PersistentPreRun:  persistentPreRun,
 		PersistentPostRun: persistentPostRun,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if handleCmdErr(cmd) {
-				return
+				return fmt.Errorf("browser context error")
 			}
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
-				log.Fatalf("✗ %v", err)
+				return fmt.Errorf("✗ %w", err)
 			}
 
 			query := strings.Join(args, " ")
@@ -33,9 +34,10 @@ func newSearchCmd() *cobra.Command {
 
 			results, err := logic.Search(bc.ctx, query, n, content)
 			if err != nil {
-				log.Fatalf("✗ Failed to perform search: %v", err)
+				return fmt.Errorf("✗ Failed to perform search: %w", err)
 			}
 			prettyPrintResults(results)
+			return nil
 		},
 	}
 
@@ -53,13 +55,13 @@ func newContentCmd() *cobra.Command {
 		Args:              cobra.MaximumNArgs(1),
 		PersistentPreRun:  persistentPreRun,
 		PersistentPostRun: persistentPostRun,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if handleCmdErr(cmd) {
-				return
+				return fmt.Errorf("browser context error")
 			}
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
-				log.Fatalf("✗ %v", err)
+				return fmt.Errorf("✗ %w", err)
 			}
 
 			var url string
@@ -70,9 +72,10 @@ func newContentCmd() *cobra.Command {
 
 			result, err := logic.GetContent(bc.ctx, url, format)
 			if err != nil {
-				log.Fatalf("✗ Failed to extract content: %v", err)
+				return fmt.Errorf("✗ Failed to extract content: %w", err)
 			}
 			prettyPrintResults(result)
+			return nil
 		},
 	}
 
@@ -89,22 +92,23 @@ func newHnScraperCmd() *cobra.Command {
 		Args:              cobra.NoArgs,
 		PersistentPreRun:  persistentPreRun,
 		PersistentPostRun: persistentPostRun,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if handleCmdErr(cmd) {
-				return
+				return fmt.Errorf("browser context error")
 			}
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
-				log.Fatalf("✗ %v", err)
+				return fmt.Errorf("✗ %w", err)
 			}
 
 			log.Printf("📰 Scraping Hacker News (limit: %d)...", limit)
 
 			submissions, err := logic.HnScraper(bc.ctx, limit)
 			if err != nil {
-				log.Fatalf("✗ Failed to scrape Hacker News: %v", err)
+				return fmt.Errorf("✗ Failed to scrape Hacker News: %w", err)
 			}
 			prettyPrintResults(submissions)
+			return nil
 		},
 	}
 

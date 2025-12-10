@@ -15,13 +15,12 @@ import (
 	"browser-tools-go/internal/config"
 )
 
-
-func mustGetConfigPath() string {
+func getConfigPath() (string, error) {
 	path, err := config.GetConfigPath()
 	if err != nil {
-		log.Fatalf("Could not determine config path: %v", err)
+		return "", fmt.Errorf("could not determine config path: %w", err)
 	}
-	return path
+	return path, nil
 }
 
 // Start launches a new persistent Chrome instance.
@@ -43,7 +42,11 @@ func Start(port int, headless bool) error {
 		return fmt.Errorf("could not find Chrome installation")
 	}
 
-	userDataDir := strings.Replace(mustGetConfigPath(), "ws.json", "user-data", 1)
+	configPath, err := getConfigPath()
+	if err != nil {
+		return err
+	}
+	userDataDir := strings.Replace(configPath, "ws.json", "user-data", 1)
 	chromeArgs := []string{
 		fmt.Sprintf("--remote-debugging-port=%d", port),
 		fmt.Sprintf("--user-data-dir=%s", userDataDir),

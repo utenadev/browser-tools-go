@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 
 	"browser-tools-go/internal/logic"
@@ -15,20 +16,21 @@ func newNavigateCmd() *cobra.Command {
 		Args:              cobra.ExactArgs(1),
 		PersistentPreRun:  persistentPreRun,
 		PersistentPostRun: persistentPostRun,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if handleCmdErr(cmd) {
-				return
+				return fmt.Errorf("browser context error")
 			}
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
-				log.Fatalf("✗ %v", err)
+				return fmt.Errorf("✗ %w", err)
 			}
 
 			log.Printf("🚀 Navigating to %s...", args[0])
 			if err := logic.Navigate(bc.ctx, args[0]); err != nil {
-				log.Fatalf("✗ Failed to navigate: %v", err)
+				return fmt.Errorf("✗ Failed to navigate: %w", err)
 			}
 			log.Println("✅ Navigation successful.")
+			return nil
 		},
 	}
 	return cmd
@@ -44,13 +46,13 @@ func newScreenshotCmd() *cobra.Command {
 		Args:              cobra.MaximumNArgs(1),
 		PersistentPreRun:  persistentPreRun,
 		PersistentPostRun: persistentPostRun,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if handleCmdErr(cmd) {
-				return
+				return fmt.Errorf("browser context error")
 			}
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
-				log.Fatalf("✗ %v", err)
+				return fmt.Errorf("✗ %w", err)
 			}
 
 			filePath := ""
@@ -65,9 +67,10 @@ func newScreenshotCmd() *cobra.Command {
 
 			savedPath, err := logic.Screenshot(bc.ctx, url, filePath, fullPage)
 			if err != nil {
-				log.Fatalf("✗ Failed to take screenshot: %v", err)
+				return fmt.Errorf("✗ Failed to take screenshot: %w", err)
 			}
 			log.Printf("✅ Screenshot saved to: %s", savedPath)
+			return nil
 		},
 	}
 

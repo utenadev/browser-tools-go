@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"browser-tools-go/internal/browser"
+
 	"github.com/spf13/cobra"
 )
 
@@ -36,7 +37,6 @@ func NewRootCmd() *cobra.Command {
 
 	return rootCmd
 }
-
 
 // Execute creates the root command and executes it.
 func Execute() {
@@ -91,7 +91,6 @@ func persistentPostRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-
 // handleCmdErr checks for an error from the pre-run steps and handles it.
 func handleCmdErr(cmd *cobra.Command) bool {
 	if cmd.Annotations != nil {
@@ -116,12 +115,12 @@ func getBrowserCtx(cmd *cobra.Command) (*browserCtx, error) {
 	return bc, nil
 }
 
-
 // prettyPrintResults marshals the data to JSON and prints it to stdout.
 func prettyPrintResults(data interface{}) {
 	output, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
-		log.Fatalf("Failed to marshal result: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to marshal result: %v\n", err)
+		return
 	}
 	fmt.Println(string(output))
 }
