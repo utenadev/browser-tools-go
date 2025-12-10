@@ -24,3 +24,4 @@
 # 2025-12-10 (Antigravity)
 
 - `go.mod`の無効なGoバージョン（`go 1.25.4`）を有効なバージョン（`go 1.21`）に修正しました。
+- テストカバレッジを拡充しました: `internal/logic/navigation_test.go`と`internal/config/config_test.go`を追加。
