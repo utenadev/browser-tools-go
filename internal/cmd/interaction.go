@@ -15,16 +15,13 @@ func newPickCmd() *cobra.Command {
 		Use:               "pick <selector>",
 		Short:             "Pick and extract information about elements matching a CSS selector",
 		Args:              cobra.ExactArgs(1),
-		PersistentPreRun:  persistentPreRun,
-		PersistentPostRun: persistentPostRun,
+		PersistentPreRunE: persistentPreRunE,
 		Run: func(cmd *cobra.Command, args []string) {
-			if handleCmdErr(cmd) {
-				return
-			}
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
 				log.Fatalf("✗ %v", err)
 			}
+			defer bc.cancel()
 
 			log.Printf("🔍 Picking elements with selector: %s (all=%t)...", args[0], all)
 
@@ -53,16 +50,13 @@ func newEvalCmd() *cobra.Command {
 		Use:               "eval <javascript>",
 		Short:             "Execute a JavaScript expression",
 		Args:              cobra.MinimumNArgs(1),
-		PersistentPreRun:  persistentPreRun,
-		PersistentPostRun: persistentPostRun,
+		PersistentPreRunE: persistentPreRunE,
 		Run: func(cmd *cobra.Command, args []string) {
-			if handleCmdErr(cmd) {
-				return
-			}
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
 				log.Fatalf("✗ %v", err)
 			}
+			defer bc.cancel()
 
 			js := strings.Join(args, " ")
 			log.Printf("📝 Evaluating JavaScript: %s", js)
@@ -82,16 +76,13 @@ func newCookiesCmd() *cobra.Command {
 		Use:               "cookies",
 		Short:             "Display all cookies for the current browser context",
 		Args:              cobra.NoArgs,
-		PersistentPreRun:  persistentPreRun,
-		PersistentPostRun: persistentPostRun,
+		PersistentPreRunE: persistentPreRunE,
 		Run: func(cmd *cobra.Command, args []string) {
-			if handleCmdErr(cmd) {
-				return
-			}
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
 				log.Fatalf("✗ %v", err)
 			}
+			defer bc.cancel()
 
 			log.Println("🌐 Retrieving cookies...")
 

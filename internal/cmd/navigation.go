@@ -13,16 +13,13 @@ func newNavigateCmd() *cobra.Command {
 		Use:               "navigate <url>",
 		Short:             "Navigate to a specific URL",
 		Args:              cobra.ExactArgs(1),
-		PersistentPreRun:  persistentPreRun,
-		PersistentPostRun: persistentPostRun,
+		PersistentPreRunE: persistentPreRunE,
 		Run: func(cmd *cobra.Command, args []string) {
-			if handleCmdErr(cmd) {
-				return
-			}
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
 				log.Fatalf("✗ %v", err)
 			}
+			defer bc.cancel()
 
 			log.Printf("🚀 Navigating to %s...", args[0])
 			if err := logic.Navigate(bc.ctx, args[0]); err != nil {
@@ -42,16 +39,13 @@ func newScreenshotCmd() *cobra.Command {
 		Use:               "screenshot [path]",
 		Short:             "Capture a screenshot of a web page",
 		Args:              cobra.MaximumNArgs(1),
-		PersistentPreRun:  persistentPreRun,
-		PersistentPostRun: persistentPostRun,
+		PersistentPreRunE: persistentPreRunE,
 		Run: func(cmd *cobra.Command, args []string) {
-			if handleCmdErr(cmd) {
-				return
-			}
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
 				log.Fatalf("✗ %v", err)
 			}
+			defer bc.cancel()
 
 			filePath := ""
 			if len(args) > 0 {

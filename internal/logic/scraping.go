@@ -2,7 +2,9 @@ package logic
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -27,29 +29,38 @@ func Search(ctx context.Context, query string, numResults int, fetchContent bool
 		return nil, fmt.Errorf("failed to navigate to google and wait for results: %w", err)
 	}
 
-	var titles, links, snippets []string
-	err = chromedp.Run(ctx,
-		chromedp.Evaluate(`Array.from(document.querySelectorAll('h3')).map(el => el.innerText)`, &titles),
-		chromedp.Evaluate(`Array.from(document.querySelectorAll('div#search a')).filter(a => a.href.startsWith('http') && !a.href.includes('google.com')).map(a => a.href)`, &links),
-		chromedp.Evaluate(`Array.from(document.querySelectorAll('div.VwiC3b')).map(el => el.innerText)`, &snippets),
-	)
+	var searchResultsJSON string
+	script := `
+		(() => {
+			const results = [];
+			const items = document.querySelectorAll('div#search div.g');
+			for (let i = 0; i < items.length; i++) {
+				const item = items[i];
+				const titleEl = item.querySelector('h3');
+				const linkEl = item.querySelector('a');
+				const snippetEl = item.querySelector('div.VwiC3b');
+				if (titleEl && linkEl && snippetEl) {
+					results.push({
+						title: titleEl.innerText,
+						link: linkEl.href,
+						snippet: snippetEl.innerText
+					});
+				}
+			}
+			return JSON.stringify(results);
+		})();
+	`
+	err = chromedp.Run(ctx, chromedp.Evaluate(script, &searchResultsJSON))
 	if err != nil {
-		// Fallback selectors
-		err = chromedp.Run(ctx,
-			chromedp.Evaluate(`Array.from(document.querySelectorAll('a h3')).map(el => el.innerText)`, &titles),
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to extract search result titles: %w", err)
-		}
+		return nil, fmt.Errorf("failed to extract search results with script: %w", err)
 	}
 
-	minLen := len(titles)
-	if len(links) < minLen {
-		minLen = len(links)
+	var rawResults []map[string]string
+	if err := json.Unmarshal([]byte(searchResultsJSON), &rawResults); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal search results: %w", err)
 	}
-	if len(snippets) < minLen {
-		minLen = len(snippets)
-	}
+
+	minLen := len(rawResults)
 	if numResults > 0 && numResults < minLen {
 		minLen = numResults
 	}
@@ -57,11 +68,12 @@ func Search(ctx context.Context, query string, numResults int, fetchContent bool
 	results := make([]models.SearchResult, minLen)
 	for i := 0; i < minLen; i++ {
 		results[i] = models.SearchResult{
-			Title:   strings.TrimSpace(titles[i]),
-			Link:    links[i],
-			Snippet: strings.TrimSpace(snippets[i]),
+			Title:   rawResults[i]["title"],
+			Link:    rawResults[i]["link"],
+			Snippet: rawResults[i]["snippet"],
 		}
 	}
+
 
 	if fetchContent {
 		for i := range results {
@@ -72,8 +84,7 @@ func Search(ctx context.Context, query string, numResults int, fetchContent bool
 				chromedp.Evaluate("document.body.innerText", &content),
 			)
 			if err != nil {
-				// Log warning instead of failing the whole operation
-				fmt.Printf("Warning: could not fetch content for %s: %v\n", results[i].Link, err)
+				log.Printf("Warning: could not fetch content for %s: %v\n", results[i].Link, err)
 				continue
 			}
 			if len(content) > 2000 {
@@ -119,7 +130,7 @@ func GetContent(ctx context.Context, targetURL, format string) (map[string]inter
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse html: %w", err)
 		}
-		processedContent = strings.TrimSpace(doc.Text())
+		processedContent = strings.TrimSpace(doc.Find("body").Text())
 	case "markdown":
 		converter := md.NewConverter("", true, nil)
 		processedContent, err = converter.ConvertString(content)
