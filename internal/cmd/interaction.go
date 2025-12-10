@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 	"strings"
 
@@ -16,15 +15,11 @@ func newPickCmd() *cobra.Command {
 		Use:               "pick <selector>",
 		Short:             "Pick and extract information about elements matching a CSS selector",
 		Args:              cobra.ExactArgs(1),
-		PersistentPreRun:  persistentPreRun,
-		PersistentPostRun: persistentPostRun,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if handleCmdErr(cmd) {
-				return fmt.Errorf("browser context error")
-			}
+		PersistentPreRunE: persistentPreRunE,
+		Run: func(cmd *cobra.Command, args []string) {
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
-				return fmt.Errorf("✗ %w", err)
+				log.Fatalf("✗ %v", err)
 			}
 			defer bc.cancel()
 
@@ -32,11 +27,11 @@ func newPickCmd() *cobra.Command {
 
 			results, err := logic.PickElements(bc.ctx, args[0], all)
 			if err != nil {
-				return fmt.Errorf("✗ Failed to pick elements: %w", err)
+				log.Fatalf("✗ Failed to pick elements: %v", err)
 			}
 			if len(results) == 0 {
 				log.Println("✅ No elements found.")
-				return nil
+				return
 			}
 
 			if all {
@@ -44,7 +39,6 @@ func newPickCmd() *cobra.Command {
 			} else {
 				prettyPrintResults(results[0])
 			}
-			return nil
 		},
 	}
 	cmd.Flags().BoolVar(&all, "all", false, "Extract info from all matching elements")
@@ -56,15 +50,11 @@ func newEvalCmd() *cobra.Command {
 		Use:               "eval <javascript>",
 		Short:             "Execute a JavaScript expression",
 		Args:              cobra.MinimumNArgs(1),
-		PersistentPreRun:  persistentPreRun,
-		PersistentPostRun: persistentPostRun,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if handleCmdErr(cmd) {
-				return fmt.Errorf("browser context error")
-			}
+		PersistentPreRunE: persistentPreRunE,
+		Run: func(cmd *cobra.Command, args []string) {
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
-				return fmt.Errorf("✗ %w", err)
+				log.Fatalf("✗ %v", err)
 			}
 			defer bc.cancel()
 
@@ -73,10 +63,9 @@ func newEvalCmd() *cobra.Command {
 
 			result, err := logic.EvaluateJS(bc.ctx, js)
 			if err != nil {
-				return fmt.Errorf("✗ Failed to evaluate JavaScript: %w", err)
+				log.Fatalf("✗ Failed to evaluate JavaScript: %v", err)
 			}
 			prettyPrintResults(result)
-			return nil
 		},
 	}
 	return cmd
@@ -87,15 +76,11 @@ func newCookiesCmd() *cobra.Command {
 		Use:               "cookies",
 		Short:             "Display all cookies for the current browser context",
 		Args:              cobra.NoArgs,
-		PersistentPreRun:  persistentPreRun,
-		PersistentPostRun: persistentPostRun,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if handleCmdErr(cmd) {
-				return fmt.Errorf("browser context error")
-			}
+		PersistentPreRunE: persistentPreRunE,
+		Run: func(cmd *cobra.Command, args []string) {
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
-				return fmt.Errorf("✗ %w", err)
+				log.Fatalf("✗ %v", err)
 			}
 			defer bc.cancel()
 
@@ -103,10 +88,9 @@ func newCookiesCmd() *cobra.Command {
 
 			cookies, err := logic.GetCookies(bc.ctx)
 			if err != nil {
-				return fmt.Errorf("✗ Failed to get cookies: %w", err)
+				log.Fatalf("✗ Failed to get cookies: %v", err)
 			}
 			prettyPrintResults(cookies)
-			return nil
 		},
 	}
 	return cmd

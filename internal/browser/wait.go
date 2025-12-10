@@ -21,8 +21,6 @@ func WaitForWS(ctx context.Context, url string, maxWait time.Duration) error {
 	for time.Now().Before(deadline) {
 		conn, err := dialer.DialContext(ctx, "tcp", addr)
 		if err == nil {
-			// Found the port, but we should also check if it's a valid WS endpoint.
-			// This is a basic check. A full handshake would be more robust.
 			_ = conn.Close()
 			log.Println("✅ Browser WebSocket is ready.")
 			return nil

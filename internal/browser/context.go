@@ -30,7 +30,6 @@ func NewPersistentContext() (context.Context, context.CancelFunc, error) {
 func NewTemporaryContext(headless bool) (context.Context, context.CancelFunc, error) {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.Flag("headless", headless),
-		// Add other flags as needed
 	)
 
 	allocCtx, cancel1 := chromedp.NewExecAllocator(context.Background(), opts...)

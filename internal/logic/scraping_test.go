@@ -25,10 +25,9 @@ func TestGetContentFormatting(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to parse html: %v", err)
 		}
-		expectedText := "Hello World\nThis is a test paragraph.\nClick here"
+		expectedText := "Hello World This is a test paragraph. Click here"
 		actualText := strings.TrimSpace(doc.Find("body").Text())
 
-		// Normalize whitespace for comparison
 		actualText = strings.Join(strings.Fields(actualText), " ")
 		expectedText = strings.Join(strings.Fields(expectedText), " ")
 
@@ -45,12 +44,8 @@ func TestGetContentFormatting(t *testing.T) {
 			t.Fatalf("failed to convert to markdown: %v", err)
 		}
 
-		expectedMarkdown := "Hello World\n\nThis is a test paragraph.\n\n[Click here](https://example.com)"
-
-		// Normalize markdown for comparison
 		actualMarkdown := strings.TrimSpace(markdown)
-		actualMarkdown = strings.ReplaceAll(actualMarkdown, "\r\n", "\n") // Windows line endings
-		expectedMarkdown = strings.TrimSpace(expectedMarkdown)
+		actualMarkdown = strings.ReplaceAll(actualMarkdown, "\r\n", "\n")
 
 
 		if !strings.Contains(actualMarkdown, "Hello World") || !strings.Contains(actualMarkdown, "This is a test paragraph") || !strings.Contains(actualMarkdown, "[Click here](https://example.com)") {
@@ -59,7 +54,6 @@ func TestGetContentFormatting(t *testing.T) {
 	})
 
 	t.Run("format=html", func(t *testing.T) {
-		// HTML should remain unchanged
 		if htmlContent != htmlContent {
 			t.Error("expected html to be unchanged, but it was modified")
 		}

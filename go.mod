@@ -1,6 +1,6 @@
 module browser-tools-go
 
-go 1.21
+go 1.25.4
 
 require (
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
