@@ -28,3 +28,4 @@
 - cmd層およびbrowser層の`log.Fatalf`をすべて除去し、`RunE`パターンによるエラー返却に統一しました。
 - ハードコードされたCSSセレクタを設定可能にしました: `internal/config/selectors.go`を追加し、`scraping.go`を更新。
 - CLIコマンドのE2Eテストを追加しました: `internal/cmd/cmd_test.go`（ヘルプ表示テスト）。
+- GitHub Actions CI/CDを設定しました: `.github/workflows/ci.yml`（Linux/Windows両対応、lint含む）。
