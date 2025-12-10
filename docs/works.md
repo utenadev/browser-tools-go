@@ -29,3 +29,6 @@
 - ハードコードされたCSSセレクタを設定可能にしました: `internal/config/selectors.go`を追加し、`scraping.go`を更新。
 - CLIコマンドのE2Eテストを追加しました: `internal/cmd/cmd_test.go`（ヘルプ表示テスト）。
 - GitHub Actions CI/CDを設定しました: `.github/workflows/ci.yml`（Linux/Windows両対応、lint含む）。
+- READMEのインストールパスを実際のリポジトリパスに修正しました（英語版・日本語版両方）。
+- `content`コマンドのドキュメントをREADME.ja.mdに追加しました。
+- レビュードキュメント（`docs/review_20251210_jules.md`）を更新し、全タスク完了を反映しました。

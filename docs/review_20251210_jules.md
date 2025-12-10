@@ -74,3 +74,14 @@ The tool is functional and provides useful features. The recommendations above a
 
 - **8. ロギングと出力の混在:**
   - **解決済み:** ログを`stderr`に、結果を`stdout`に出力するように分離し、UNIXパイプラインとの親和性を高めました。
+
+## 更新: 追加改善 (Antigravity)
+
+- **6. ハードコードされたCSSセレクタ:**
+  - **解決済み:** `internal/config/selectors.go`にセレクタ設定を追加し、Google検索とHacker Newsスクレイピングのセレクタを設定可能にしました。
+
+- **追加: CI/CD:**
+  - GitHub Actionsワークフローを追加し、Linux/Windows両環境でのビルド・テスト・lintを自動化しました。
+
+- **追加: テストカバレッジ拡充:**
+  - `cmd`, `config`, `logic`パッケージにテストを追加しました。

@@ -6,10 +6,19 @@ Go-native Chrome DevTools Protocol tools for agent-assisted web automation. Thes
 
 ## Installation
 
+### From Source
+
 ```bash
-go install github.com/user/browser-tools-go@latest
+git clone https://github.com/utenadev/browser-tools-go.git
+cd browser-tools-go
+go build -o browser-tools-go .
 ```
-*(Note: Replace `github.com/user/browser-tools-go` with the actual repository path)*
+
+Or install directly:
+
+```bash
+go install github.com/utenadev/browser-tools-go@latest
+```
 
 This will install the `browser-tools-go` command in your `$GOPATH/bin` directory.
 
