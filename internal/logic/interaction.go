@@ -39,7 +39,6 @@ func PickElements(ctx context.Context, selector string, all bool) ([]models.Elem
 			chromedp.ActionFunc(func(ctx context.Context) error {
 				result, err := GetBoundingBox(ctx, node.NodeID)
 				if err != nil {
-					// Don't fail the whole operation, just log a warning and continue
 					fmt.Printf("Warning: could not get bounding box for node %d: %v\n", node.NodeID, err)
 					rect = make(map[string]interface{})
 				} else {
@@ -67,7 +66,6 @@ func PickElements(ctx context.Context, selector string, all bool) ([]models.Elem
 
 // GetBoundingBox gets the bounding box for a given node ID.
 func GetBoundingBox(ctx context.Context, nodeID cdp.NodeID) (map[string]interface{}, error) {
-	// 1. Resolve node to get its object ID
 	remoteObject, err := dom.ResolveNode().WithNodeID(nodeID).Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not resolve node: %w", err)
@@ -76,7 +74,6 @@ func GetBoundingBox(ctx context.Context, nodeID cdp.NodeID) (map[string]interfac
 		return nil, fmt.Errorf("resolved node object is nil")
 	}
 
-	// 2. Call the getBoundingClientRect function on the resolved object
 	var res map[string]interface{}
 	err = chromedp.CallFunctionOn(
 		"function() { const rect = this.getBoundingClientRect(); return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left }; }",

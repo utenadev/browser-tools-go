@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 	"strings"
 
@@ -18,31 +17,27 @@ func newSearchCmd() *cobra.Command {
 		Use:               "search <query>",
 		Short:             "Search Google and return results",
 		Args:              cobra.MinimumNArgs(1),
-		PersistentPreRun:  persistentPreRun,
-		PersistentPostRun: persistentPostRun,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if handleCmdErr(cmd) {
-				return fmt.Errorf("browser context error")
-			}
+		PersistentPreRunE: persistentPreRunE,
+		Run: func(cmd *cobra.Command, args []string) {
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
-				return fmt.Errorf("✗ %w", err)
+				log.Fatalf("✗ %v", err)
 			}
+			defer bc.cancel()
 
 			query := strings.Join(args, " ")
 			log.Printf("🔍 Searching Google for: %s (results: %d, content: %t)", query, n, content)
 
 			results, err := logic.Search(bc.ctx, query, n, content)
 			if err != nil {
-				return fmt.Errorf("✗ Failed to perform search: %w", err)
+				log.Fatalf("✗ Failed to perform search: %v", err)
 			}
 			prettyPrintResults(results)
-			return nil
 		},
 	}
 
 	cmd.Flags().IntVar(&n, "n", 5, "Number of results to return")
-	cmd.Flags().BoolVar(&content, "content", false, "Fetch content from each result")
+	cmd.Flags().BoolVar(&content, "content", false, "Fetch and extract readable content from each result. This may significantly increase execution time.")
 	return cmd
 }
 
@@ -53,16 +48,13 @@ func newContentCmd() *cobra.Command {
 		Use:               "content [url]",
 		Short:             "Extracts readable content from a URL or the current page",
 		Args:              cobra.MaximumNArgs(1),
-		PersistentPreRun:  persistentPreRun,
-		PersistentPostRun: persistentPostRun,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if handleCmdErr(cmd) {
-				return fmt.Errorf("browser context error")
-			}
+		PersistentPreRunE: persistentPreRunE,
+		Run: func(cmd *cobra.Command, args []string) {
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
-				return fmt.Errorf("✗ %w", err)
+				log.Fatalf("✗ %v", err)
 			}
+			defer bc.cancel()
 
 			var url string
 			if len(args) > 0 {
@@ -72,10 +64,9 @@ func newContentCmd() *cobra.Command {
 
 			result, err := logic.GetContent(bc.ctx, url, format)
 			if err != nil {
-				return fmt.Errorf("✗ Failed to extract content: %w", err)
+				log.Fatalf("✗ Failed to extract content: %v", err)
 			}
 			prettyPrintResults(result)
-			return nil
 		},
 	}
 
@@ -90,25 +81,21 @@ func newHnScraperCmd() *cobra.Command {
 		Use:               "hn-scraper",
 		Short:             "Scrapes the top stories from the Hacker News front page",
 		Args:              cobra.NoArgs,
-		PersistentPreRun:  persistentPreRun,
-		PersistentPostRun: persistentPostRun,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if handleCmdErr(cmd) {
-				return fmt.Errorf("browser context error")
-			}
+		PersistentPreRunE: persistentPreRunE,
+		Run: func(cmd *cobra.Command, args []string) {
 			bc, err := getBrowserCtx(cmd)
 			if err != nil {
-				return fmt.Errorf("✗ %w", err)
+				log.Fatalf("✗ %v", err)
 			}
+			defer bc.cancel()
 
 			log.Printf("📰 Scraping Hacker News (limit: %d)...", limit)
 
 			submissions, err := logic.HnScraper(bc.ctx, limit)
 			if err != nil {
-				return fmt.Errorf("✗ Failed to scrape Hacker News: %w", err)
+				log.Fatalf("✗ Failed to scrape Hacker News: %v", err)
 			}
 			prettyPrintResults(submissions)
-			return nil
 		},
 	}
 

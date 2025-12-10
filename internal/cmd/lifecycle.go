@@ -1,10 +1,9 @@
 package cmd
 
 import (
-	"fmt"
+	"log"
 
 	"browser-tools-go/internal/browser"
-
 	"github.com/spf13/cobra"
 )
 
@@ -15,11 +14,10 @@ func newStartCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start a persistent Chrome instance",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			if err := browser.Start(port, headless); err != nil {
-				return fmt.Errorf("✗ Failed to start browser: %w", err)
+				log.Fatalf("✗ Failed to start browser: %v", err)
 			}
-			return nil
 		},
 	}
 
@@ -32,11 +30,10 @@ func newCloseCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "close",
 		Short: "Close the persistent Chrome instance",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			if err := browser.Close(); err != nil {
-				return fmt.Errorf("✗ Failed to close browser: %w", err)
+				log.Fatalf("✗ Failed to close browser: %v", err)
 			}
-			return nil
 		},
 	}
 	return cmd

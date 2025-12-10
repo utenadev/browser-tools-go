@@ -45,9 +45,7 @@ Example: browser-tools-go run screenshot --url https://example.com my.png`,
 				}
 			}
 		},
-		// This is the key: allow cobra to parse flags for the subcommand.
 		TraverseChildren: true,
-		// Tell cobra that 'run' itself doesn't have a run function.
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.Help()
@@ -56,7 +54,6 @@ Example: browser-tools-go run screenshot --url https://example.com my.png`,
 	}
 
 	cmd.Flags().BoolVar(&headless, "headless", true, "Run the temporary browser in headless mode")
-	// This allows subcommands to have their own flags without 'run' complaining.
 	cmd.FParseErrWhitelist.UnknownFlags = true
 
 	return cmd

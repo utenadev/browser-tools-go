@@ -6,19 +6,10 @@
 
 ## インストール
 
-### ソースから
-
 ```bash
-git clone https://github.com/utenadev/browser-tools-go.git
-cd browser-tools-go
-go build -o browser-tools-go .
+go install github.com/user/browser-tools-go@latest
 ```
-
-または直接インストール:
-
-```bash
-go install github.com/utenadev/browser-tools-go@latest
-```
+*(注意: `github.com/user/browser-tools-go` は実際のレポジトリパスに置き換えてください)*
 
 これにより、`browser-tools-go` コマンドが `$GOPATH/bin` ディレクトリにインストールされます。
 
@@ -131,17 +122,6 @@ browser-tools-go search "machine learning" --n 3 --content
 Googleを検索し、結果を返します。
 - `--n <num>`: 返す結果の数（デフォルト: 5）。
 - `--content`: 各検索結果のリンクから、読み取り可能なコンテンツ（プレーンテキスト形式）を取得・抽出します。
-
-### Extract Page Content (ページコンテンツ抽出)
-
-```bash
-browser-tools-go content
-browser-tools-go content https://example.com
-browser-tools-go content --format text
-```
-
-URLまたは現在のページから読み取り可能なコンテンツを抽出します。
-- `--format <format>`: 出力形式（`markdown`, `text`, `html`、デフォルト: `markdown`）。
 
 ### Hacker News Scraper (Hacker News スクレイパー)
 
