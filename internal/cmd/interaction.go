@@ -21,10 +21,14 @@ func newPickCmd() *cobra.Command {
 			if handleCmdErr(cmd) {
 				return
 			}
-			browserCtx := cmd.Context().Value("browserCtx").(*browserCtx)
+			bc, err := getBrowserCtx(cmd)
+			if err != nil {
+				log.Fatalf("✗ %v", err)
+			}
+
 			log.Printf("🔍 Picking elements with selector: %s (all=%t)...", args[0], all)
 
-			results, err := logic.PickElements(browserCtx.ctx, args[0], all)
+			results, err := logic.PickElements(bc.ctx, args[0], all)
 			if err != nil {
 				log.Fatalf("✗ Failed to pick elements: %v", err)
 			}
@@ -55,11 +59,15 @@ func newEvalCmd() *cobra.Command {
 			if handleCmdErr(cmd) {
 				return
 			}
-			browserCtx := cmd.Context().Value("browserCtx").(*browserCtx)
+			bc, err := getBrowserCtx(cmd)
+			if err != nil {
+				log.Fatalf("✗ %v", err)
+			}
+
 			js := strings.Join(args, " ")
 			log.Printf("📝 Evaluating JavaScript: %s", js)
 
-			result, err := logic.EvaluateJS(browserCtx.ctx, js)
+			result, err := logic.EvaluateJS(bc.ctx, js)
 			if err != nil {
 				log.Fatalf("✗ Failed to evaluate JavaScript: %v", err)
 			}
@@ -80,10 +88,14 @@ func newCookiesCmd() *cobra.Command {
 			if handleCmdErr(cmd) {
 				return
 			}
-			browserCtx := cmd.Context().Value("browserCtx").(*browserCtx)
+			bc, err := getBrowserCtx(cmd)
+			if err != nil {
+				log.Fatalf("✗ %v", err)
+			}
+
 			log.Println("🌐 Retrieving cookies...")
 
-			cookies, err := logic.GetCookies(browserCtx.ctx)
+			cookies, err := logic.GetCookies(bc.ctx)
 			if err != nil {
 				log.Fatalf("✗ Failed to get cookies: %v", err)
 			}

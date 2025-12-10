@@ -1,12 +1,22 @@
 # 2025-12-10
 
-- Conducted a code review of the `browser-tools-go` application, identifying key areas for improvement such as monolithic structure, lack of tests, and unreliable waiting mechanisms.
-- Refactored the entire application from a single `main.go` file into a structured package hierarchy (`cmd`, `logic`, `models`, `browser`).
-- Replaced unreliable `time.Sleep` calls with robust waiting functions (`chromedp.WaitVisible` and a custom WebSocket polling mechanism).
-- Improved error handling by returning errors from logic functions instead of calling `log.Fatalf`.
-- Separated logging (`stderr`) from command output (`stdout`).
-- Added unit tests for content formatting logic and an integration test for element picking logic.
-- Restored browser lifecycle commands (`start`, `close`, `run`) that were accidentally removed during the refactoring.
-- Fixed a bug in the `pick` command where it would return incorrect bounding box data for multiple elements.
-- Replaced the deprecated `io/ioutil` package with the `os` package.
-- Updated the code review document to reflect the fixes and improvements made.
+- `browser-tools-go`アプリケーションのコードレビューを実施し、モノリシックな構造、テストの欠如、信頼性の低い待機メカニズムなどの主要な改善点を特定しました。
+- アプリケーション全体を単一の`main.go`ファイルから、構造化されたパッケージ階層（`cmd`, `logic`, `models`, `browser`）にリファクタリングしました。
+- 信頼性の低い`time.Sleep`呼び出しを、堅牢な待機関数（`chromedp.WaitVisible`およびカスタムWebSocketポーリングメカニズム）に置き換えました。
+- `log.Fatalf`を呼び出す代わりにロジック関数からエラーを返すようにエラーハンドリングを改善しました。
+- ロギング（`stderr`）とコマンド出力（`stdout`）を分離しました。
+- コンテンツフォーマットロジックのための単体テストと、要素ピッキングロジックのための統合テストを追加しました。
+- リファクタリング中に誤って削除されたブラウザライフサイクルコマンド（`start`, `close`, `run`）を復元しました。
+- `pick`コマンドで複数の要素に対して誤ったバウンディングボックスデータが返されるバグを修正しました。
+- 非推奨の`io/ioutil`パッケージを`os`パッケージに置き換えました。
+- 行われた修正と改善を反映するために、コードレビュードキュメントを更新しました。
+- 最終的なレビュー済み・テスト済みのコードを提出しました。
+
+# 2025-12-11
+
+- `run`コマンドを、一時的なブラウザコンテキストを設定するシンプルなラッパーにリファクタリングし、すべてのサブコマンドフラグを再宣言する必要をなくしました。
+- グローバルな`rootCmd`を`newRootCmd()`ファクトリ関数にカプセル化し、テスト容易性を向上させました。
+- `run`コマンドのコンテキストを認識するように`persistentPreRun`ロジックを更新し、コマンドが永続モードと一時モードの両方でシームレスに動作するようにしました。
+- 直接的なコマンド実行と`run`コマンド経由の実行の両方の挙動を手動で検証しました。
+- すべての主要な問題が解決されたことを反映するために、コードレビュードキュメントを更新しました。
+- 残りのリファクタリングタスクに対する最終的な変更を提出しました。
