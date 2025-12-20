@@ -132,6 +132,160 @@ browser-tools-go hn-scraper 10
 
 Hacker Newsのトップ記事をスクレイピングします。取得する記事の数にオプションで制限を設けることができます（デフォルト: 30）。
 
+## スクレイピング信頼性向上
+
+### セレクタフォールバック機構
+
+2025年12月現在、以下の機能が追加され、Webサイトのレイアウト変更に強くなりました：
+
+#### 自動セレクタフォールバック
+
+各スクレイピングコマンドは、以下のように**複数のセレクタ候補**を順番に試します：
+
+**Google検索:**
+- コンテナ: `div#search` → `div#rso` → `div.g`
+- タイトル: `h3` → `h3.LC20lb` → `div.v9i61e`
+- スニペット: `div.VwiC3b` → `div.s` → `div.BNeawe`
+
+**Hacker News:**
+- メインテーブル: `table.itemlist` → `table#hnmain` → `table`
+- タイトルリンク: `span.titleline > a` → `a.storylink` → `td.title > a`
+- スコア: `.score` → `.subtext .score`
+
+最初のセレクタが失敗した場合、自動的に代替セレクタを試します。これにより、Webサイトのレイアウト変更に自動的に対応できます。
+
+### リトライ機構
+
+ネットワークエラーや一時的なエラーに対して、**自動リトライ**が機能します：
+
+```bash
+# 以下のようなエラーで一時的に失敗した場合、自動的に最大3回まで再試行
+# - ネットワークタイムアウト
+# - 接続エラー
+# - 一時的なサーバーエラー
+```
+
+**リトライ設定:**
+- 最大3回のリトライ（設定可能）
+- 指数バックオフ（100ms → 200ms → 400ms）
+- 最大バックオフ: 2秒
+
+### カスタムセレクタ設定
+
+環境ごとにセレクタをカスタマイズできます：
+
+1. **カスタムセレクタファイルを作成:**
+
+```bash
+# 1. 設定ディレクトリを作成
+mkdir -p ~/.browser-tools-go
+
+# 2. 設定ファイルを作成
+cat > ~/.browser-tools-go/selectors.json << 'EOF'
+{
+  "google_search": {
+    "result_item": ["div.rc", "div.g"],
+    "title": ["h3.LC20lb", "h3"],
+    "snippet": ["div.VwiC3b", "div.s"]
+  },
+  "hacker_news": {
+    "title_link": ["span.titleline > a", "a.storylink"]
+  }
+}
+EOF
+```
+
+2. **効果:**
+   - ツールは`selectors.json`に指定されたセレクタを優先して使用
+   - フォールバックセレクタが自動的にフォロー
+   - Webサイトのレイアウト変更を素早く対応可能
+
+3. **デフォルト設定の確認:**
+デフォルト設定を確認するには、以下のコマンドで現在の設定をエクスポートできます：
+
+```bash
+# (後で実装可能)
+```
+
+### セレクタ推奨リスト
+
+**よく変化するコンポーネントの例:**
+
+| サイト | 脆弱なセレクタ | 代わりのセレクタ |
+|--------|--------------|----------------|
+| Google | `div.VwiC3b` | `div.s`, `div.BNeawe` |
+| HN | `span.titleline` | `a.storylink`, `span.titleline > a` |
+
+### 設定オプション
+
+**selectors.jsonフォーマット:**
+
+```jsonc
+{
+  "google_search": {
+    "search_container": ["div#search", "div#rso"],
+    "result_item": ["div.g", "div.rc"],
+    "title": ["h3", "h3.LC20lb"],
+    "url": ["a[href]"],
+    "snippet": ["div.VwiC3b", "div.s"],
+    "fallback_wait": ["div#search", "body"]
+  },
+  "hacker_news": {
+    "main_table": ["table.itemlist"],
+    "title_link": ["span.titleline > a"],
+    "score": [".score"],
+    "author": [".hnuser"],
+    "time": ["span.age a"],
+    "comments": ["td.subtext > a:last-child"],
+    "fallback_wait": ["table.itemlist", "body"]
+  }
+}
+```
+
+### 新機能のテスト
+
+新しいスクレイピング機能は以下のテストで検証されています：
+
+```bash
+# 新しいユーティリティテスト
+go test -v ./internal/utils/selectors_test.go
+go test -v ./internal/utils/retry_test.go
+
+# 強化版スクレイパーテスト
+go test -v ./internal/logic/scraping_enhanced_test.go
+```
+
+### トラブルシューティング
+
+**スクレイピングが頻繁に失敗する場合:**
+
+1. **セレクタ設定の確認:**
+```bash
+cat ~/.browser-tools-go/selectors.json
+```
+
+2. **Chrome DevToolsでの確認:**
+```bash
+# Chrome DevToolsで現在のDOM構造を確認
+# 適切なセレクタを選択し、selectors.jsonに追加
+```
+
+3. **リトライ設定のカスタマイズ:**
+```json
+{
+  "retry": {
+    "max_attempts": 5,
+    "initial_backoff_ms": 1000
+  }
+}
+```
+
+### 今後の予定
+
+- Google検索セレクタ自動更新機能
+- セレクタ有効性の自動検出
+- Webサイト変更の自動検知と通知
+
 ## セキュリティ
 
 ### ファイルパス保護
