@@ -131,3 +131,91 @@ browser-tools-go hn-scraper 10
 ```
 
 Hacker Newsのトップ記事をスクレイピングします。取得する記事の数にオプションで制限を設けることができます（デフォルト: 30）。
+
+## セキュリティ
+
+### ファイルパス保護
+
+本ツールは、以下のセキュリティ機能を実装して、ファイルパストラバーサル攻撃を防ぎます：
+
+- **SafeWriteFile**: ファイル操作前にパスの安全性を検証します
+- **ValidateFilePath**: 危険なファイルパス（`../`、絶対パス、NULLバイトなど）を拒否します
+- **スクリーンショット保存**: スクリーンショット出力パスを常に検証し、PNG形式に制限します
+
+#### セキュリティ機能の挙動
+
+以下のパターンはセキュリティにより拒否されます：
+
+```bash
+# 親ディレクトリ参照（パストラバーサル）
+browser-tools-go screenshot ../secrets.txt          # 拒否: 親ディレクトリ参照
+browser-tools-go screenshot ../../../etc/passwd     # 拒否: システムファイルアクセス
+
+# NULLバイト注入
+browser-tools-go screenshot "file\x00name.png"       # 拒否: NULLバイト
+
+# 絶対パス（未許可）
+browser-tools-go screenshot /tmp/output.png          # 拒否: 絶対パス指定
+```
+
+**重要**: クロスサイトスクリプティング（XSS）やコマンドインジェクション攻撃を防ぐため、URLやJSインプットは適切にエスケープされます。HTTPリクエストスプーフィング攻撃を回避するため、URL入力は常にチェックされます。
+
+詳細は[securityYAMLレポート](my/report_20251220_Claude+deepseek.yaml)を確認ください。
+
+### データとプライバシー
+
+- **Cookie情報**: コマンド出力に表示されますが、ローカルAPIの使用に限定されています
+- **セッション情報**: `~/.browser-tools-go/ws.json`に保存されます（パーミッション: `0600`）
+- **リモート接続**: デフォルトでローカルホスト(`127.0.0.1`)のみを許可しています
+
+## テスト
+
+### 現在のテストカバレッジ
+
+本ツールは、以下のパッケージ単位でテストを実行しています：
+
+| パッケージ | テストカバレッジ | テスト内容 |
+|-----------|----------------|----------|
+| `internal/utils` | 高 | `ValidateFilePath`, `ValidateScreenshotPath`, `SecureWriteFile`など |
+| `internal/config` | 高 | `SaveWsInfo`, `LoadWsInfo`, `RemoveWsInfo`, パーミッション設定 |
+| `internal/browser` | 中 | `Start`, `Close`, `WaitForWS`, `NewPersistentContext` |
+| `internal/cmd` | 中 | コマンド定義、引数検証、フラグ設定 |
+| `internal/logic` | 部分 | `PickElements`, `GetContentFormatting` |
+
+### テストの実行
+
+```bash
+# 全パッケージのテストを実行
+go test ./...
+
+# 詳細出力でのテスト実行
+go test -v ./...
+
+# 特定パッケージのテスト実行
+go test -v ./internal/utils
+go test -v ./internal/config
+go test -v ./internal/browser
+go test -v ./internal/cmd
+go test -v ./internal/logic
+
+# HTMLカバレッジレポート生成
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out -o coverage.html
+```
+
+**注意**: Chrome DevToolsとの接続を必要とする完全な統合テストは、Chromeが実行環境にインストールされていないとスキップされる場合があります。
+
+### 最近の改良
+
+2025年12月現在、以下のセキュリティ及びテスト機能強化が実装されました：
+
+1. ✅ **セキュリティ機能**: ファイルパストラバーサル防止（`internal/utils/path.go`）
+2. ✅ **セキュリティ機能**: スクリーンショットパス検証強化
+3. ✅ **テスト追加**: `config` パッケージ（9種類）
+4. ✅ **テスト追加**: `browser` パッケージ（5種類）
+5. ✅ **テスト追加**: `cmd` パッケージ（12種類）
+6. ✅ **テスト追加**: `utils` パッケージ（17種類）
+
+## ライセンス
+
+[MIT License](LICENSE)

@@ -3,8 +3,8 @@ package logic
 import (
 	"context"
 	"fmt"
-	"os"
 
+	"browser-tools-go/internal/utils"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 )
@@ -18,6 +18,8 @@ func Navigate(ctx context.Context, url string) error {
 }
 
 // Screenshot captures a screenshot of the current page.
+// filePathが空の場合、カレントディレクトリに"screenshot.png"を作成します。
+// filePathは検証され、不正なパス操作は拒否されます。
 func Screenshot(ctx context.Context, targetURL, filePath string, fullPage bool) (string, error) {
 	tasks := make(chromedp.Tasks, 0)
 	if targetURL != "" {
@@ -42,18 +44,20 @@ func Screenshot(ctx context.Context, targetURL, filePath string, fullPage bool) 
 		return "", fmt.Errorf("failed to take screenshot: %w", err)
 	}
 
-	if filePath == "" {
-		tmpFile, err := os.CreateTemp("", "screenshot-*.png")
-		if err != nil {
-			return "", fmt.Errorf("failed to create temporary file: %w", err)
-		}
-		filePath = tmpFile.Name()
-		tmpFile.Close()
+	// セキュリティ強化：ファイルパスの検証
+	validatedPath, err := utils.ValidateScreenshotPath(filePath, ".")
+	if err != nil {
+		return "", fmt.Errorf("invalid screenshot file path: %w", err)
 	}
 
-	if err := os.WriteFile(filePath, buf, 0644); err != nil {
-		return "", fmt.Errorf("failed to save screenshot: %w", err)
+	if validatedPath == "" {
+		validatedPath = "screenshot.png"
 	}
 
-	return filePath, nil
+	// セキュアな書き込み
+	if err := utils.SecureWriteFile(validatedPath, buf, 0644, "."); err != nil {
+		return "", fmt.Errorf("failed to save screenshot to %s: %w", validatedPath, err)
+	}
+
+	return validatedPath, nil
 }
